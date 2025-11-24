@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>American Snake Oil Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            padding: 20px;
+            position: relative;
+        }
+
+        .game-container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            max-width: 700px;
+        }
+
+        h1 {
+            color: #c41230;
+            margin-bottom: 10px;
+            font-weight: bold;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.3);
+            font-size: 56px;
+            position: relative;
+            padding: 25px;
+            background: linear-gradient(135deg, rgba(10, 49, 97, 0.1) 0%, rgba(196, 18, 48, 0.1) 100%);
+            border-radius: 10px;
+        }
+
+        h1::before {
+            content: '🦅';
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 48px;
+            opacity: 0.3;
+        }
+
+        h1::after {
+            content: '🦅';
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%) scaleX(-1);
+            font-size: 48px;
+            opacity: 0.3;
+        }
+
+        .score-board {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f4f4f4;
+            border-radius: 10px;
+        }
+
+        .score-item {
+            text-align: center;
+        }
+
+        .score-label {
+            font-size: 14px;
+            color: #666;
+            font-weight: bold;
+        }
+
+        .score-value {
+            font-size: 24px;
+            color: #0a3161;
+            font-weight: bold;
+        }
+
+        #gameCanvas {
+            border: 4px solid #0a3161;
+            background-color: #1a3a52;
+            display: block;
+            margin: 0 auto 20px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            max-width: 100%;
+            height: auto;
+            width: 800px;
+            height: 800px;
+        }
+
+        .button {
+            margin-top: 15px;
+            background: #c41230;
+            font-weight: bold;
+            transition: all 0.3s;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .button:hover {
+            background: #a00f24;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(196, 18, 48, 0.4);
+        }
+
+        #gameOver {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            text-align: center;
+        }
+
+        #gameOver h2 {
+            color: #c41230;
+            margin-bottom: 20px;
+        }
+
+        #gameOver .button {
+            width: auto;
+            padding: 12px 32px;
+        }
+
+        .powerup-display {
+            margin: 10px 0;
+            padding: 10px;
+            background: linear-gradient(135deg, #0a3161 0%, #1a4d8f 100%);
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @media (max-width: 640px) {
+            .game-container {
+                padding: 15px;
+            }
+
+            h1 {
+                font-size: 32px;
+            }
+
+            #gameCanvas {
+                width: 100%;
+                height: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- White House background image -->
+    <img id="whitehouseImg" alt="White House Background" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2;">
+    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, rgba(10, 49, 97, 0.65) 0%, rgba(22, 33, 62, 0.65) 100%); z-index: -1;"></div>
+    
+    <div class="game-container">
+        <h1><span style="font-size: 72px; font-weight: 900;">🇺🇸</span> <span style="font-size: 36px;">OILERS</span> 🛢️</h1>
+        
+        <div class="score-board">
+            <div class="score-item">
+                <div class="score-label">SCORE</div>
+                <div class="score-value" id="score">0</div>
+            </div>
+            <div class="score-item">
+                <div class="score-label">BARRELS</div>
+                <div class="score-value" id="barrels">0</div>
+            </div>
+            <div class="score-item">
+                <div class="score-label">BEST</div>
+                <div class="score-value" id="highScore">0</div>
+            </div>
+        </div>
+
+        <div class="powerup-display" id="powerupDisplay">No Active Power-up</div>
+
+        <canvas id="gameCanvas" width="800" height="800"></canvas>
+
+        <div style="background: linear-gradient(135deg, rgba(45,45,45,0.97) 0%, rgba(26,26,26,0.97) 100%); padding: 20px; border-radius: 10px; margin-top: 20px; border: 3px solid #ffd700; box-shadow: 0 5px 20px rgba(0,0,0,0.3); position: relative; overflow: hidden;">
+            <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; opacity: 0.15; background-image: url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%2270%22 x=%2250%22 text-anchor=%22middle%22 font-size=%2280%22%3E🦅%3C/text%3E%3C/svg%3E'); background-size: contain; background-position: center; background-repeat: no-repeat;"></div>
+            <p style="color: #ffd700; font-size: 24px; font-weight: bold; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); letter-spacing: 2px; position: relative; z-index: 1;">MADE BY DIZZY</p>
+        </div>
+
+        <button class="button" onclick="restartGame()">🔄 Restart Game</button>
+    </div>
+
+    <div id="gameOver">
+        <h2>Game Over!</h2>
+        <p style="font-size: 20px; margin: 20px 0;">Final Score: <strong id="finalScore">0</strong></p>
+        <button class="button" onclick="restartGame()">Play Again</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const gridSize = 20;
+        const cellSize = canvas.width / gridSize;
+
+        let snake = [];
+        let direction = { x: 1, y: 0 };
+        let nextDirection = { x: 1, y: 0 };
+        let oilBarrels = [];
+        let powerups = [];
+        let score = 0;
+        let barrels = 0;
+        let gameLoop;
+        let gameSpeed = 200;
+        let highScore = 0;
+        let activePowerups = [];
+        let powerupTimers = {};
+
+        const POWERUP_TYPES = {
+            SPEED: { emoji: '⚡', name: 'Speed Boost', duration: 5000, color: '#FFD700' },
+            SLOW: { emoji: '🐌', name: 'Slow Motion', duration: 7000, color: '#4CAF50' },
+            DOUBLE: { emoji: '💎', name: 'Double Points', duration: 8000, color: '#9C27B0' },
+            INVINCIBLE: { emoji: '🛡️', name: 'Shield', duration: 6000, color: '#2196F3' }
+        };
+
+        const flagPattern = {
+            blue: '#0a3161',
+            red: '#c41230',
+            white: '#ffffff'
+        };
+
+        function initGame() {
+            snake = [
+                { x: 10, y: 10 },
+                { x: 9, y: 10 },
+                { x: 8, y: 10 }
+            ];
+            direction = { x: 1, y: 0 };
+            nextDirection = { x: 1, y: 0 };
+            score = 0;
+            barrels = 0;
+            gameSpeed = 200;
+            oilBarrels = [];
+            powerups = [];
+            activePowerups = [];
+            powerupTimers = {};
+            spawnOilBarrels();
+            updateScore();
+            updatePowerupDisplay();
+            document.getElementById('gameOver').style.display = 'none';
+        }
+
+        function spawnOilBarrels() {
+            oilBarrels = [];
+            const count = Math.floor(Math.random() * 2) + 5;
+            
+            for (let i = 0; i < count; i++) {
+                let validPosition = false;
+                let item;
+                let isBarrel = Math.random() > 0.175; // 17.5% chance for powerup
+                
+                while (!validPosition) {
+                    item = {
+                        x: Math.floor(Math.random() * gridSize),
+                        y: Math.floor(Math.random() * gridSize)
+                    };
+                    
+                    validPosition = !snake.some(segment => segment.x === item.x && segment.y === item.y) &&
+                                  !oilBarrels.some(b => b.x === item.x && b.y === item.y) &&
+                                  !powerups.some(p => p.x === item.x && p.y === item.y);
+                }
+                
+                if (isBarrel) {
+                    oilBarrels.push(item);
+                } else {
+                    const types = Object.keys(POWERUP_TYPES);
+                    const type = types[Math.floor(Math.random() * types.length)];
+                    item.type = type;
+                    powerups.push(item);
+                }
+            }
+        }
+
+        function spawnPowerup() {
+            const types = Object.keys(POWERUP_TYPES);
+            const type = types[Math.floor(Math.random() * types.length)];
+            
+            let validPosition = false;
+            let powerup;
+            
+            while (!validPosition) {
+                powerup = {
+                    x: Math.floor(Math.random() * gridSize),
+                    y: Math.floor(Math.random() * gridSize),
+                    type: type
+                };
+                
+                validPosition = !snake.some(segment => segment.x === powerup.x && segment.y === powerup.y) &&
+                              !oilBarrels.some(b => b.x === powerup.x && b.y === powerup.y);
+            }
+            
+            powerups.push(powerup);
+        }
+
+        function drawFlagSnake(x, y, index) {
+            const startX = x * cellSize;
+            const startY = y * cellSize;
+            const size = cellSize - 2;
+            
+            // Draw stripes
+            const stripeCount = 7;
+            const stripeHeight = size / stripeCount;
+            
+            for (let i = 0; i < stripeCount; i++) {
+                ctx.fillStyle = i % 2 === 0 ? flagPattern.red : flagPattern.white;
+                ctx.fillRect(startX + 1, startY + 1 + i * stripeHeight, size, stripeHeight);
+            }
+            
+            // Blue canton for head
+            if (index === 0) {
+                ctx.fillStyle = flagPattern.blue;
+                ctx.fillRect(startX + 1, startY + 1, size * 0.5, size * 0.4);
+                
+                // Stars
+                ctx.fillStyle = flagPattern.white;
+                ctx.font = `${cellSize * 0.15}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                const starSize = size * 0.15;
+                for (let row = 0; row < 2; row++) {
+                    for (let col = 0; col < 3; col++) {
+                        ctx.fillText('★', startX + 1 + starSize + col * starSize, startY + 1 + starSize + row * starSize);
+                    }
+                }
+            }
+            
+            // Shine
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.fillRect(startX + 2, startY + 2, size * 0.3, size * 0.3);
+        }
+
+        function drawOilBarrel(x, y) {
+            const centerX = x * cellSize + cellSize / 2;
+            const centerY = y * cellSize + cellSize / 2;
+            const width = cellSize - 6;
+            const height = cellSize - 4;
+            const startX = x * cellSize + 3;
+            const startY = y * cellSize + 2;
+
+            const gradient = ctx.createRadialGradient(centerX - width/4, centerY - height/4, 0, centerX, centerY, width/2);
+            gradient.addColorStop(0, '#3d3d3d');
+            gradient.addColorStop(0.5, '#2d2d2d');
+            gradient.addColorStop(1, '#1a1a1a');
+
+            ctx.fillStyle = gradient;
+            ctx.fillRect(startX, startY, width, height);
+            
+            ctx.fillStyle = '#3d3d3d';
+            ctx.beginPath();
+            ctx.ellipse(centerX, startY + 3, width/2, height/6, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#ffd700';
+            ctx.fillRect(startX, startY + height * 0.3, width, 3);
+            ctx.fillRect(startX, startY + height * 0.6, width, 3);
+
+            ctx.fillStyle = '#8B7500';
+            ctx.fillRect(startX + width * 0.2, centerY - 5, width * 0.6, 10);
+            
+            ctx.fillStyle = '#000000';
+            ctx.font = `bold ${cellSize * 0.25}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('OIL', centerX, centerY);
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.fillRect(startX + 2, startY + 3, width/4, height * 0.4);
+        }
+
+        function drawPowerup(x, y, type) {
+            const centerX = x * cellSize + cellSize / 2;
+            const centerY = y * cellSize + cellSize / 2;
+            const powerupInfo = POWERUP_TYPES[type];
+            
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = powerupInfo.color;
+            
+            ctx.fillStyle = powerupInfo.color;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, cellSize / 2 - 4, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.shadowBlur = 0;
+            
+            ctx.font = `${cellSize * 0.6}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(powerupInfo.emoji, centerX, centerY);
+        }
+
+        function draw() {
+            // Draw background
+            ctx.fillStyle = '#1a3a52';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Semi-transparent overlay to make game elements visible
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Grid lines
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= gridSize; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * cellSize, 0);
+                ctx.lineTo(i * cellSize, canvas.height);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(0, i * cellSize);
+                ctx.lineTo(canvas.width, i * cellSize);
+                ctx.stroke();
+            }
+
+            snake.forEach((segment, index) => {
+                drawFlagSnake(segment.x, segment.y, index);
+            });
+
+            oilBarrels.forEach(barrel => {
+                drawOilBarrel(barrel.x, barrel.y);
+            });
+
+            powerups.forEach(powerup => {
+                drawPowerup(powerup.x, powerup.y, powerup.type);
+            });
+        }
+
+        function activatePowerup(type) {
+            const powerupInfo = POWERUP_TYPES[type];
+            const powerupId = Date.now() + Math.random();
+            
+            // Add to active powerups
+            activePowerups.push({ type, id: powerupId });
+            updatePowerupDisplay();
+            
+            if (type === 'SPEED') {
+                gameSpeed = Math.max(100, gameSpeed - 100);
+                clearInterval(gameLoop);
+                gameLoop = setInterval(gameStep, gameSpeed);
+                
+                powerupTimers[powerupId] = setTimeout(() => {
+                    gameSpeed = Math.min(200, gameSpeed + 100);
+                    clearInterval(gameLoop);
+                    gameLoop = setInterval(gameStep, gameSpeed);
+                    activePowerups = activePowerups.filter(p => p.id !== powerupId);
+                    delete powerupTimers[powerupId];
+                    updatePowerupDisplay();
+                }, powerupInfo.duration);
+            } else if (type === 'SLOW') {
+                gameSpeed = gameSpeed + 100;
+                clearInterval(gameLoop);
+                gameLoop = setInterval(gameStep, gameSpeed);
+                
+                powerupTimers[powerupId] = setTimeout(() => {
+                    gameSpeed = Math.max(100, gameSpeed - 100);
+                    clearInterval(gameLoop);
+                    gameLoop = setInterval(gameStep, gameSpeed);
+                    activePowerups = activePowerups.filter(p => p.id !== powerupId);
+                    delete powerupTimers[powerupId];
+                    updatePowerupDisplay();
+                }, powerupInfo.duration);
+            } else {
+                powerupTimers[powerupId] = setTimeout(() => {
+                    activePowerups = activePowerups.filter(p => p.id !== powerupId);
+                    delete powerupTimers[powerupId];
+                    updatePowerupDisplay();
+                }, powerupInfo.duration);
+            }
+        }
+
+        function updatePowerupDisplay() {
+            const display = document.getElementById('powerupDisplay');
+            if (activePowerups.length > 0) {
+                const powerupTexts = activePowerups.map(p => {
+                    const info = POWERUP_TYPES[p.type];
+                    return `${info.emoji} ${info.name}`;
+                });
+                display.innerHTML = powerupTexts.join(' + ');
+                
+                // Mix colors if multiple powerups
+                const colors = activePowerups.map(p => POWERUP_TYPES[p.type].color);
+                if (colors.length === 1) {
+                    display.style.background = `linear-gradient(135deg, ${colors[0]} 0%, ${colors[0]}dd 100%)`;
+                } else {
+                    display.style.background = `linear-gradient(135deg, ${colors.join(', ')})`;
+                }
+            } else {
+                display.innerHTML = 'No Active Power-up';
+                display.style.background = 'linear-gradient(135deg, #0a3161 0%, #1a4d8f 100%)';
+            }
+        }
+
+        function update() {
+            direction = { ...nextDirection };
+
+            const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
+
+            const isInvincible = activePowerups.some(p => p.type === 'INVINCIBLE');
+            
+            if (!isInvincible) {
+                if (head.x < 0 || head.x >= gridSize || head.y < 0 || head.y >= gridSize) {
+                    gameOver();
+                    return;
+                }
+
+                if (snake.some(segment => segment.x === head.x && segment.y === head.y)) {
+                    gameOver();
+                    return;
+                }
+            } else {
+                if (head.x < 0) head.x = gridSize - 1;
+                if (head.x >= gridSize) head.x = 0;
+                if (head.y < 0) head.y = gridSize - 1;
+                if (head.y >= gridSize) head.y = 0;
+            }
+
+            snake.unshift(head);
+
+            const barrelIndex = oilBarrels.findIndex(b => b.x === head.x && b.y === head.y);
+            if (barrelIndex !== -1) {
+                const hasDouble = activePowerups.some(p => p.type === 'DOUBLE');
+                const pointValue = hasDouble ? 20 : 10;
+                score += pointValue;
+                barrels++;
+                
+                // Spawn new item (barrel or powerup)
+                let validPosition = false;
+                let newItem;
+                let isBarrel = Math.random() > 0.175; // 17.5% chance for powerup
+                
+                while (!validPosition) {
+                    newItem = {
+                        x: Math.floor(Math.random() * gridSize),
+                        y: Math.floor(Math.random() * gridSize)
+                    };
+                    
+                    validPosition = !snake.some(segment => segment.x === newItem.x && segment.y === newItem.y) &&
+                                  !oilBarrels.some((b, idx) => idx !== barrelIndex && b.x === newItem.x && b.y === newItem.y) &&
+                                  !powerups.some(p => p.x === newItem.x && p.y === newItem.y);
+                }
+                
+                if (isBarrel) {
+                    oilBarrels[barrelIndex] = newItem;
+                } else {
+                    oilBarrels.splice(barrelIndex, 1);
+                    const types = Object.keys(POWERUP_TYPES);
+                    const type = types[Math.floor(Math.random() * types.length)];
+                    newItem.type = type;
+                    powerups.push(newItem);
+                }
+                
+                updateScore();
+                
+                const hasSpeed = activePowerups.some(p => p.type === 'SPEED');
+                const hasSlow = activePowerups.some(p => p.type === 'SLOW');
+                
+                if (gameSpeed > 100 && !hasSpeed && !hasSlow) {
+                    gameSpeed -= 3;
+                    clearInterval(gameLoop);
+                    gameLoop = setInterval(gameStep, gameSpeed);
+                }
+            } else {
+                snake.pop();
+            }
+
+            const powerupIndex = powerups.findIndex(p => p.x === head.x && p.y === head.y);
+            if (powerupIndex !== -1) {
+                activatePowerup(powerups[powerupIndex].type);
+                
+                // Spawn new item to replace the powerup
+                let validPosition = false;
+                let newItem;
+                let isBarrel = Math.random() > 0.175;
+                
+                while (!validPosition) {
+                    newItem = {
+                        x: Math.floor(Math.random() * gridSize),
+                        y: Math.floor(Math.random() * gridSize)
+                    };
+                    
+                    validPosition = !snake.some(segment => segment.x === newItem.x && segment.y === newItem.y) &&
+                                  !oilBarrels.some(b => b.x === newItem.x && b.y === newItem.y) &&
+                                  !powerups.some((p, idx) => idx !== powerupIndex && p.x === newItem.x && p.y === newItem.y);
+                }
+                
+                if (isBarrel) {
+                    powerups.splice(powerupIndex, 1);
+                    oilBarrels.push(newItem);
+                } else {
+                    const types = Object.keys(POWERUP_TYPES);
+                    const type = types[Math.floor(Math.random() * types.length)];
+                    newItem.type = type;
+                    powerups[powerupIndex] = newItem;
+                }
+            }
+        }
+
+        function gameStep() {
+            update();
+            draw();
+        }
+
+        function updateScore() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('barrels').textContent = barrels;
+            if (score > highScore) {
+                highScore = score;
+                document.getElementById('highScore').textContent = highScore;
+            }
+        }
+
+        function gameOver() {
+            clearInterval(gameLoop);
+            Object.values(powerupTimers).forEach(timer => clearTimeout(timer));
+            powerupTimers = {};
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('gameOver').style.display = 'block';
+        }
+
+        function restartGame() {
+            if (gameLoop) clearInterval(gameLoop);
+            Object.values(powerupTimers).forEach(timer => clearTimeout(timer));
+            powerupTimers = {};
+            initGame();
+            draw();
+            gameLoop = setInterval(gameStep, gameSpeed);
+        }
+
+        function changeDirection(newDirection) {
+            if (newDirection.x === -direction.x && newDirection.y === -direction.y) {
+                return;
+            }
+            nextDirection = newDirection;
+        }
+
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case 'ArrowUp':
+                case 'w':
+                case 'W':
+                    e.preventDefault();
+                    changeDirection({ x: 0, y: -1 });
+                    break;
+                case 'ArrowDown':
+                case 's':
+                case 'S':
+                    e.preventDefault();
+                    changeDirection({ x: 0, y: 1 });
+                    break;
+                case 'ArrowLeft':
+                case 'a':
+                case 'A':
+                    e.preventDefault();
+                    changeDirection({ x: -1, y: 0 });
+                    break;
+                case 'ArrowRight':
+                case 'd':
+                case 'D':
+                    e.preventDefault();
+                    changeDirection({ x: 1, y: 0 });
+                    break;
+            }
+        });
+
+        initGame();
+        draw();
+        gameLoop = setInterval(gameStep, gameSpeed);
+
+        // Load White House image from user upload
+        const whitehouseImg = document.getElementById('whitehouseImg');
+        if (window.fs && window.fs.readFile) {
+            window.fs.readFile('whitehouse.jpg')
+                .then(data => {
+                    const blob = new Blob([data], { type: 'image/jpeg' });
+                    const url = URL.createObjectURL(blob);
+                    whitehouseImg.src = url;
+                })
+                .catch(err => {
+                    console.log('Using fallback background');
+                    whitehouseImg.style.display = 'none';
+                });
+        } else {
+            // Fallback if file system not available
+            whitehouseImg.style.display = 'none';
+        }
+    </script>
+</body>
+</html>
